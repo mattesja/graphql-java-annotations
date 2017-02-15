@@ -71,7 +71,7 @@ public class GraphQLFragmentTest {
         public List<MyInterface> getItems() {
             return Arrays.asList(new MyObject(), new MyObject2());
         }
-    }
+        }
 
     public static class MyObject implements MyInterface {
         public String getA() {
@@ -88,7 +88,11 @@ public class GraphQLFragmentTest {
         }
     }
 
-    public static class MyObject2 implements MyInterface {
+    public static class MyObject2 extends SuperClass {
+    }
+
+    public static class SuperClass implements MyInterface {
+
         public String getA() {
             return "a2";
         }
