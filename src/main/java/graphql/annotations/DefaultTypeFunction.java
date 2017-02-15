@@ -133,6 +133,8 @@ public class DefaultTypeFunction implements TypeFunction {
                 } else {
                     throw new IllegalArgumentException("No bounds found for type " + type);
                 }
+            } else if (type instanceof TypeVariable) {
+                klass = arg.getAnnotation(GraphQLGenericType.class).value();
             } else {
                 klass = (Class<?>) type;
             }

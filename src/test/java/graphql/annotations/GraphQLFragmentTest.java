@@ -71,13 +71,10 @@ public class GraphQLFragmentTest {
         assertEquals(resultMap.size(), 1);
     }
 
-    /**
-     * Test a query which returns a list (RootObject.items) of two different classes (MyObject + MyObject2) which implement the same interface (MyInterface).
-     */
     @Test
-    public void testInterfaceInlineFragmentWithUpperBoundWildcard() throws Exception {
+    public void testInterfaceInlineFragmentWildcard() throws Exception {
         // When
-        ExecutionResult graphQLResult = graphQL.execute("{itemsUpperBoundWildcard { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
+        ExecutionResult graphQLResult = graphQL.execute("{itemsWildcard { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
         Set resultMap = ((Map) graphQLResult.getData()).entrySet();
 
         // Then
@@ -85,20 +82,31 @@ public class GraphQLFragmentTest {
         assertEquals(resultMap.size(), 1);
     }
 
-    public static class RootObject {
+    @Test
+    public void testInterfaceInlineFragmentParam() throws Exception {
+        // When
+        ExecutionResult graphQLResult = graphQL.execute("{itemsTypeVar { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
+        Set resultMap = ((Map) graphQLResult.getData()).entrySet();
+
+        // Then
+        assertEquals(graphQLResult.getErrors().size(), 0);
+        assertEquals(resultMap.size(), 1);
+    }
+
+    public static class RootObject<T> {
         @GraphQLField
         public List<MyInterface> getItems() {
             return Arrays.asList(new MyObject(), new MyObject2());
         }
 
         @GraphQLField
-        public List<? extends MyInterface> getItemsUpperBoundWildcard() {
+        public List<? extends MyInterface> getItemsWildcard() {
             return Arrays.asList(new MyObject(), new MyObject2());
         }
 
         @GraphQLField
-        public List<? super MyInterface> getItemsLowerBoundWildcard() {
-            return Arrays.asList(new MyObject(), new MyObject2());
+        public List<@GraphQLGenericType(value = MyInterface.class) T> getItemsTypeVar() {
+            return Arrays.asList((T)new MyObject(), (T)new MyObject2());
         }
     }
 
