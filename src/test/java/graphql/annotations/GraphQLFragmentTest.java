@@ -155,7 +155,7 @@ public class GraphQLFragmentTest {
         }
     }
 
-    @GraphQLTypeResolver(value = MyTypeResolver.class)
+    @GraphQLTypeResolver
     public static interface MyInterface {
         @GraphQLField
         public String getA();
@@ -163,14 +163,5 @@ public class GraphQLFragmentTest {
         @GraphQLField
         public String getB();
     }
-
-    public static class MyTypeResolver implements TypeResolver {
-
-        @Override
-        public GraphQLObjectType getType(Object object) {
-            return registry.get(object.getClass().getSimpleName());
-        }
-    }
-
 
 }
