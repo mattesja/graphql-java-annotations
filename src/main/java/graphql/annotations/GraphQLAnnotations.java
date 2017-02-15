@@ -151,7 +151,7 @@ public class GraphQLAnnotations implements GraphQLAnnotationsProcessor {
         return getInstance().getUnionBuilder(iface);
     }
 
-    public String getTypeName(Class<?> objectClass) {
+    public static String getTypeName(Class<?> objectClass) {
         GraphQLName name = objectClass.getAnnotation(GraphQLName.class);
         return (name == null ? objectClass.getSimpleName() : name.value());
     }
@@ -177,7 +177,11 @@ public class GraphQLAnnotations implements GraphQLAnnotationsProcessor {
             }
         }
         GraphQLTypeResolver typeResolver = iface.getAnnotation(GraphQLTypeResolver.class);
-        builder.typeResolver(newInstance(typeResolver.value()));
+        TypeResolver typeResolverInstance = newInstance(typeResolver.value());
+        if (typeResolverInstance instanceof DefaultTypeResolver) {
+            ((DefaultTypeResolver)typeResolverInstance).init(getTypeRegistry());
+        }
+        builder.typeResolver(typeResolverInstance);
         return builder;
     }
 
@@ -262,7 +266,9 @@ public class GraphQLAnnotations implements GraphQLAnnotationsProcessor {
     public GraphQLObjectType getObject(Class<?> object) throws GraphQLAnnotationsException {
         GraphQLObjectType.Builder builder = getObjectBuilder(object);
 
-        return new GraphQLObjectTypeWrapper(object, builder.build());
+        GraphQLObjectTypeWrapper objectTypeWrapper = new GraphQLObjectTypeWrapper(object, builder.build());
+        typeRegistry.put(getTypeName(object), objectTypeWrapper);
+        return objectTypeWrapper;
     }
 
     public static GraphQLObjectType object(Class<?> object) throws GraphQLAnnotationsException {
@@ -699,4 +705,5 @@ public class GraphQLAnnotations implements GraphQLAnnotationsProcessor {
             }
         }
     }
+
 }

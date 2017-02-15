@@ -24,5 +24,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface GraphQLTypeResolver {
-    Class<? extends TypeResolver> value();
+    Class<? extends TypeResolver> value() default DefaultTypeResolver.class;
 }
