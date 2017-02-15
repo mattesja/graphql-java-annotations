@@ -17,6 +17,7 @@ package graphql.annotations;
 import graphql.relay.Relay;
 import graphql.schema.*;
 import graphql.schema.GraphQLNonNull;
+import org.apache.commons.lang3.ClassUtils;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -295,7 +296,7 @@ public class GraphQLAnnotations implements GraphQLAnnotationsProcessor {
             }
         }
 
-        for (Class<?> iface : object.getInterfaces()) {
+        for (Class<?> iface : ClassUtils.getAllInterfaces(object)) {
             if (iface.getAnnotation(GraphQLTypeResolver.class) != null) {
                 builder.withInterface((GraphQLInterfaceType) getInterface(iface));
             }
