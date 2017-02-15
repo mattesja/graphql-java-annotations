@@ -106,7 +106,7 @@ public class GraphQLInterfaceTest {
     public void testInterfaces() {
         GraphQLObjectType object = GraphQLAnnotations.object(TestObject.class);
         List<GraphQLInterfaceType> ifaces = object.getInterfaces();
-        assertEquals(ifaces.size(), 1);
+        assertEquals(ifaces.size(), 2);
         assertEquals(ifaces.get(0).getName(), "TestIface");
     }
 
