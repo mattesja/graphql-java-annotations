@@ -83,9 +83,20 @@ public class GraphQLFragmentTest {
     }
 
     @Test
-    public void testInterfaceInlineFragmentParam() throws Exception {
+    public void testInterfaceInlineFragmentTypeVar() throws Exception {
         // When
         ExecutionResult graphQLResult = graphQL.execute("{itemsTypeVar { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
+        Set resultMap = ((Map) graphQLResult.getData()).entrySet();
+
+        // Then
+        assertEquals(graphQLResult.getErrors().size(), 0);
+        assertEquals(resultMap.size(), 1);
+    }
+
+    @Test
+    public void testInterfaceInlineFragmentWildcardTypeVar() throws Exception {
+        // When
+        ExecutionResult graphQLResult = graphQL.execute("{itemsWildcardTypeVar { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
         Set resultMap = ((Map) graphQLResult.getData()).entrySet();
 
         // Then
@@ -106,6 +117,11 @@ public class GraphQLFragmentTest {
 
         @GraphQLField
         public List<@GraphQLGenericType(value = MyInterface.class) T> getItemsTypeVar() {
+            return Arrays.asList((T)new MyObject(), (T)new MyObject2());
+        }
+
+        @GraphQLField
+        public List<@GraphQLGenericType(value = MyInterface.class) ? extends T> getItemsWildcardTypeVar() {
             return Arrays.asList((T)new MyObject(), (T)new MyObject2());
         }
     }

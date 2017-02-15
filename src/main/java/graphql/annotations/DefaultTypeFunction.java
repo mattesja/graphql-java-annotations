@@ -129,11 +129,15 @@ public class DefaultTypeFunction implements TypeFunction {
             } else if (type instanceof WildcardType) {
                 Type[] upperBounds = ((WildcardType) type).getUpperBounds(); // lower bounds not supported
                 if (upperBounds.length > 0) {
-                    klass = (Class<?>) upperBounds[0];
+                    if (upperBounds[0] instanceof TypeVariable) { // <? extends T>
+                        klass = arg.getAnnotation(GraphQLGenericType.class).value();
+                    } else { // <? extends Object>
+                        klass = (Class<?>) upperBounds[0];
+                    }
                 } else {
                     throw new IllegalArgumentException("No bounds found for type " + type);
                 }
-            } else if (type instanceof TypeVariable) {
+            } else if (type instanceof TypeVariable) { // <T>
                 klass = arg.getAnnotation(GraphQLGenericType.class).value();
             } else {
                 klass = (Class<?>) type;
