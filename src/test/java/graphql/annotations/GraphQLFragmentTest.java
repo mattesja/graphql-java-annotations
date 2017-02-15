@@ -20,6 +20,7 @@ import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.TypeResolver;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -31,34 +32,52 @@ public class GraphQLFragmentTest {
 
     static Map<String, GraphQLObjectType> registry;
 
+    GraphQLInterfaceType iface;
+    GraphQLObjectType rootType;
+    GraphQLObjectType objectType2;
+    GraphQLSchema schema;
+    GraphQLObjectType objectType;
+    GraphQL graphQL;
+
+    @BeforeTest
+    public void onSetUp() {
+        registry = new HashMap<>();
+        iface = (GraphQLInterfaceType) GraphQLAnnotations.iface(MyInterface.class);
+        rootType = GraphQLAnnotations.object(RootObject.class);
+        objectType2 = GraphQLAnnotations.object(MyObject2.class);
+        registry.put("MyObject2", objectType2);
+
+        objectType = GraphQLAnnotations.object(MyObject.class);
+        registry.put("MyObject", objectType);
+
+        schema = GraphQLSchema.newSchema()
+                .query(rootType)
+                .build(new HashSet(Arrays.asList(iface, rootType, objectType, objectType2)));
+
+        graphQL = new GraphQL(schema);
+    }
+
     /**
      * Test a query which returns a list (RootObject.items) of two different classes (MyObject + MyObject2) which implement the same interface (MyInterface).
      */
     @Test
     public void testInterfaceInlineFragment() throws Exception {
-        // Given
-        registry = new HashMap<>();
-
-        GraphQLInterfaceType iface = (GraphQLInterfaceType) GraphQLAnnotations.iface(MyInterface.class);
-
-        GraphQLObjectType rootType = GraphQLAnnotations.object(RootObject.class);
-
-        GraphQLObjectType objectType2 = GraphQLAnnotations.object(MyObject2.class);
-
-        registry.put("MyObject2", objectType2);
-
-        GraphQLObjectType objectType = GraphQLAnnotations.object(MyObject.class);
-
-        registry.put("MyObject", objectType);
-
-        GraphQLSchema schema = GraphQLSchema.newSchema()
-                .query(rootType)
-                .build(new HashSet(Arrays.asList(iface, rootType, objectType, objectType2)));
-
-        GraphQL graphQL2 = new GraphQL(schema);
-
         // When
-        ExecutionResult graphQLResult = graphQL2.execute("{items { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
+        ExecutionResult graphQLResult = graphQL.execute("{items { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
+        Set resultMap = ((Map) graphQLResult.getData()).entrySet();
+
+        // Then
+        assertEquals(graphQLResult.getErrors().size(), 0);
+        assertEquals(resultMap.size(), 1);
+    }
+
+    /**
+     * Test a query which returns a list (RootObject.items) of two different classes (MyObject + MyObject2) which implement the same interface (MyInterface).
+     */
+    @Test
+    public void testInterfaceInlineFragmentWithUpperBoundWildcard() throws Exception {
+        // When
+        ExecutionResult graphQLResult = graphQL.execute("{itemsUpperBoundWildcard { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
         Set resultMap = ((Map) graphQLResult.getData()).entrySet();
 
         // Then
@@ -71,7 +90,17 @@ public class GraphQLFragmentTest {
         public List<MyInterface> getItems() {
             return Arrays.asList(new MyObject(), new MyObject2());
         }
+
+        @GraphQLField
+        public List<? extends MyInterface> getItemsUpperBoundWildcard() {
+            return Arrays.asList(new MyObject(), new MyObject2());
         }
+
+        @GraphQLField
+        public List<? super MyInterface> getItemsLowerBoundWildcard() {
+            return Arrays.asList(new MyObject(), new MyObject2());
+        }
+    }
 
     public static class MyObject implements MyInterface {
         public String getA() {

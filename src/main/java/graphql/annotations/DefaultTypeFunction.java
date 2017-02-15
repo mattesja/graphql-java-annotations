@@ -21,10 +21,7 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
 import org.osgi.service.component.annotations.*;
 
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
@@ -126,10 +123,18 @@ public class DefaultTypeFunction implements TypeFunction {
             AnnotatedParameterizedType parameterizedType = (AnnotatedParameterizedType) annotatedType;
             AnnotatedType arg = parameterizedType.getAnnotatedActualTypeArguments()[0];
             Class<?> klass;
-            if (arg.getType() instanceof ParameterizedType) {
-                klass = (Class<?>)((ParameterizedType)(arg.getType())).getRawType();
+            Type type = arg.getType();
+            if (type instanceof ParameterizedType) {
+                klass = (Class<?>) ((ParameterizedType) type).getRawType();
+            } else if (type instanceof WildcardType) {
+                Type[] upperBounds = ((WildcardType) type).getUpperBounds(); // lower bounds not supported
+                if (upperBounds.length > 0) {
+                    klass = (Class<?>) upperBounds[0];
+                } else {
+                    throw new IllegalArgumentException("No bounds found for type " + type);
+                }
             } else {
-                klass = (Class<?>) arg.getType();
+                klass = (Class<?>) type;
             }
             return new GraphQLList(DefaultTypeFunction.this.apply(klass, arg));
         }
