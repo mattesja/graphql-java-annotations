@@ -130,6 +130,9 @@ public class DefaultTypeFunction implements TypeFunction {
                 Type[] upperBounds = ((WildcardType) type).getUpperBounds(); // lower bounds not supported
                 if (upperBounds.length > 0) {
                     if (upperBounds[0] instanceof TypeVariable) { // <? extends T>
+                        if (arg.getAnnotation(GraphQLGenericType.class) == null) {
+                            throw new IllegalArgumentException("GraphQLGenericType Annotation missing at upper bound type variable for class " + aClass);
+                        }
                         klass = arg.getAnnotation(GraphQLGenericType.class).value();
                     } else { // <? extends Object>
                         klass = (Class<?>) upperBounds[0];
@@ -138,6 +141,9 @@ public class DefaultTypeFunction implements TypeFunction {
                     throw new IllegalArgumentException("No bounds found for type " + type);
                 }
             } else if (type instanceof TypeVariable) { // <T>
+                if (arg.getAnnotation(GraphQLGenericType.class) == null) {
+                    throw new IllegalArgumentException("GraphQLGenericType Annotation missing at type variable for class " + aClass);
+                }
                 klass = arg.getAnnotation(GraphQLGenericType.class).value();
             } else {
                 klass = (Class<?>) type;
