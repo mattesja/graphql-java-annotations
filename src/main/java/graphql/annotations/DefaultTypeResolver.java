@@ -24,6 +24,8 @@ import java.util.Map;
  */
 public class DefaultTypeResolver implements TypeResolver {
 
+    public final static String DEFAULT_TYPE = "default";
+
     private Map<String, GraphQLType> typeRegistry;
 
     public void init( Map<String, graphql.schema.GraphQLType> typeRegistry){
@@ -36,7 +38,11 @@ public class DefaultTypeResolver implements TypeResolver {
         if (graphQLType instanceof GraphQLObjectType) {
             return (GraphQLObjectType) graphQLType;
         } else {
-            return null;
+            GraphQLType defaultType = typeRegistry.get(DEFAULT_TYPE);
+            if (defaultType instanceof GraphQLObjectType) {
+                return (GraphQLObjectType) defaultType;
+            }
         }
+        return null;
     }
 }
