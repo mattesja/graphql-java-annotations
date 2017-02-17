@@ -5,9 +5,9 @@ import graphql.schema.DataFetcher;
 public class GraphQLAnnotationConfiguration {
 
     private Class<?> defaultGenericType;
-    private DataFetcher defaultDataFetcher;
+    private Class<? extends DataFetcher> defaultDataFetcher;
 
-    public GraphQLAnnotationConfiguration(Class<?> defaultGenericType, DataFetcher defaultDataFetcher) {
+    public GraphQLAnnotationConfiguration(Class<?> defaultGenericType, Class<? extends DataFetcher> defaultDataFetcher) {
         this.defaultGenericType = defaultGenericType;
         this.defaultDataFetcher = defaultDataFetcher;
     }
@@ -16,7 +16,7 @@ public class GraphQLAnnotationConfiguration {
         return defaultGenericType;
     }
 
-    public DataFetcher getDefaultDataFetcher() {
+    public Class<? extends DataFetcher> getDefaultDataFetcher() {
         return defaultDataFetcher;
     }
 }

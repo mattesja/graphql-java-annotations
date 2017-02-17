@@ -501,7 +501,6 @@ public class GraphQLAnnotations implements GraphQLAnnotationsProcessor {
         name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
         GraphQLName nameAnn = method.getAnnotation(GraphQLName.class);
         builder.name(nameAnn == null ? name : nameAnn.value());
-
         GraphQLType annotation = method.getAnnotation(GraphQLType.class);
         TypeFunction typeFunction = defaultTypeFunction;
 
@@ -574,11 +573,22 @@ public class GraphQLAnnotations implements GraphQLAnnotationsProcessor {
         }
 
         GraphQLDataFetcher dataFetcher = method.getAnnotation(GraphQLDataFetcher.class);
-        DataFetcher actualDataFetcher;
+        DataFetcher actualDataFetcher = null;
         if (dataFetcher == null && method.getAnnotation(GraphQLBatched.class) != null) {
             actualDataFetcher = new BatchedMethodDataFetcher(method, typeFunction);
         } else if (dataFetcher == null) {
-            actualDataFetcher = new MethodDataFetcher(method, typeFunction);
+            Class<? extends DataFetcher> dataFetcherClass = getConfiguration().getDefaultDataFetcher();
+            if (dataFetcherClass != null) {
+                try {
+                    Constructor<? extends DataFetcher> ctor = dataFetcherClass.getConstructor(Method.class);
+                    actualDataFetcher = constructNewInstance(ctor, method);
+                } catch (NoSuchMethodException e) {
+                    throw new GraphQLAnnotationsException("Unable to instantiate via constructor " + method.getName(), e);
+                }
+            }
+            if (actualDataFetcher == null) {
+                actualDataFetcher = new MethodDataFetcher(method, typeFunction);
+            }
         } else {
             actualDataFetcher = newInstance(dataFetcher.value());
         }
