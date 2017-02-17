@@ -19,7 +19,6 @@ import graphql.GraphQL;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.TypeResolver;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -28,7 +27,7 @@ import java.util.*;
 import static org.testng.AssertJUnit.assertEquals;
 
 
-public class GraphQLFragmentTest {
+public class GraphQLAnnotationConfigurationTest {
 
     static Map<String, GraphQLObjectType> registry;
 
@@ -39,10 +38,69 @@ public class GraphQLFragmentTest {
     GraphQLObjectType objectType;
     GraphQL graphQL;
 
-    @BeforeTest
-    public void onSetUp() {
+    @Test
+    public void testInterfaceInlineFragmentWildcardTypeVarNoClass() throws Exception {
+        // Given
         registry = new HashMap<>();
         iface = (GraphQLInterfaceType) GraphQLAnnotations.iface(MyInterface.class);
+        GraphQLAnnotations.getInstance().setConfiguration(new GraphQLAnnotationConfiguration(MyInterface.class, null));
+        rootType = GraphQLAnnotations.object(RootObject.class);
+        objectType2 = GraphQLAnnotations.object(MyObject2.class);
+        registry.put("MyObject2", objectType2);
+
+        objectType = GraphQLAnnotations.object(MyObject.class);
+        registry.put("MyObject", objectType);
+
+        schema = GraphQLSchema.newSchema()
+                .query(rootType)
+                .build(new HashSet(Arrays.asList(iface, rootType, objectType, objectType2)));
+
+        graphQL = new GraphQL(schema);
+
+        // When
+        ExecutionResult graphQLResult = graphQL.execute("{itemsWildcardTypeVar { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
+
+        // Then
+        Set resultMap = ((Map) graphQLResult.getData()).entrySet();
+        assertEquals(graphQLResult.getErrors().size(), 0);
+        assertEquals(resultMap.size(), 1);
+    }
+
+    @Test
+    public void testInterfaceInlineFragmentTypeVar() throws Exception {
+        // Given
+        registry = new HashMap<>();
+        iface = (GraphQLInterfaceType) GraphQLAnnotations.iface(MyInterface.class);
+        GraphQLAnnotations.getInstance().setConfiguration(new GraphQLAnnotationConfiguration(MyInterface.class, null));
+        rootType = GraphQLAnnotations.object(RootObject.class);
+        objectType2 = GraphQLAnnotations.object(MyObject2.class);
+        registry.put("MyObject2", objectType2);
+
+        objectType = GraphQLAnnotations.object(MyObject.class);
+        registry.put("MyObject", objectType);
+
+        schema = GraphQLSchema.newSchema()
+                .query(rootType)
+                .build(new HashSet(Arrays.asList(iface, rootType, objectType, objectType2)));
+
+        graphQL = new GraphQL(schema);
+
+        // When
+        ExecutionResult graphQLResult = graphQL.execute("{itemsTypeVar { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
+
+        // Then
+        Set resultMap = ((Map) graphQLResult.getData()).entrySet();
+        assertEquals(graphQLResult.getErrors().size(), 0);
+        assertEquals(resultMap.size(), 1);
+    }
+
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testInterfaceInlineFragmentWildcardTypeVarNoClass_NoDefaultFromConfigurationError() throws Exception {
+        // Given
+        registry = new HashMap<>();
+        iface = (GraphQLInterfaceType) GraphQLAnnotations.iface(MyInterface.class);
+        GraphQLAnnotations.getInstance().setConfiguration(new GraphQLAnnotationConfiguration(null, null));
         rootType = GraphQLAnnotations.object(RootObject.class);
         objectType2 = GraphQLAnnotations.object(MyObject2.class);
         registry.put("MyObject2", objectType2);
@@ -57,53 +115,6 @@ public class GraphQLFragmentTest {
         graphQL = new GraphQL(schema);
     }
 
-    /**
-     * Test a query which returns a list (RootObject.items) of two different classes (MyObject + MyObject2) which implement the same interface (MyInterface).
-     */
-    @Test
-    public void testInterfaceInlineFragment() throws Exception {
-        // When
-        ExecutionResult graphQLResult = graphQL.execute("{items { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
-        Set resultMap = ((Map) graphQLResult.getData()).entrySet();
-
-        // Then
-        assertEquals(graphQLResult.getErrors().size(), 0);
-        assertEquals(resultMap.size(), 1);
-    }
-
-    @Test
-    public void testInterfaceInlineFragmentWildcard() throws Exception {
-        // When
-        ExecutionResult graphQLResult = graphQL.execute("{itemsWildcard { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
-        Set resultMap = ((Map) graphQLResult.getData()).entrySet();
-
-        // Then
-        assertEquals(graphQLResult.getErrors().size(), 0);
-        assertEquals(resultMap.size(), 1);
-    }
-
-    @Test
-    public void testInterfaceInlineFragmentTypeVar() throws Exception {
-        // When
-        ExecutionResult graphQLResult = graphQL.execute("{itemsTypeVar { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
-        Set resultMap = ((Map) graphQLResult.getData()).entrySet();
-
-        // Then
-        assertEquals(graphQLResult.getErrors().size(), 0);
-        assertEquals(resultMap.size(), 1);
-    }
-
-    @Test
-    public void testInterfaceInlineFragmentWildcardTypeVar() throws Exception {
-        // When
-        ExecutionResult graphQLResult = graphQL.execute("{itemsWildcardTypeVar { ... on MyObject {a, my {b}} ... on MyObject2 {a, b}  }}", new RootObject());
-        Set resultMap = ((Map) graphQLResult.getData()).entrySet();
-
-        // Then
-        assertEquals(graphQLResult.getErrors().size(), 0);
-        assertEquals(resultMap.size(), 1);
-    }
-
     public static class RootObject<T> {
         @GraphQLField
         public List<MyInterface> getItems() {
@@ -111,20 +122,14 @@ public class GraphQLFragmentTest {
         }
 
         @GraphQLField
-        public List<? extends MyInterface> getItemsWildcard() {
-            return Arrays.asList(new MyObject(), new MyObject2());
-        }
-
-        @GraphQLField
-        public List<@GraphQLGenericType(value = MyInterface.class) T> getItemsTypeVar() {
+        public List<T> getItemsTypeVar() {
             return Arrays.asList((T)new MyObject(), (T)new MyObject2());
         }
 
         @GraphQLField
-        public List<@GraphQLGenericType(value = MyInterface.class) ? extends T> getItemsWildcardTypeVar() {
+        public List<? extends T> getItemsWildcardTypeVar() {
             return Arrays.asList((T)new MyObject(), (T)new MyObject2());
         }
-
     }
 
     public static class MyObject implements MyInterface {

@@ -77,6 +77,7 @@ import static java.util.Objects.nonNull;
 public class GraphQLAnnotations implements GraphQLAnnotationsProcessor {
 
     private Map<String, graphql.schema.GraphQLType> typeRegistry = new HashMap<>();
+    private GraphQLAnnotationConfiguration configuration = new GraphQLAnnotationConfiguration(null, null);
 
     public GraphQLAnnotations() {
         defaultTypeFunction = new DefaultTypeFunction();
@@ -87,6 +88,14 @@ public class GraphQLAnnotations implements GraphQLAnnotationsProcessor {
 
     public static GraphQLAnnotations getInstance() {
         return instance;
+    }
+
+    public void setConfiguration(GraphQLAnnotationConfiguration configuration) {
+        this.configuration = configuration;
+    }
+
+    public GraphQLAnnotationConfiguration getConfiguration() {
+        return configuration;
     }
 
     @Override

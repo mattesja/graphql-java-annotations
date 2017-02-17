@@ -127,28 +127,48 @@ public class DefaultTypeFunction implements TypeFunction {
             if (type instanceof ParameterizedType) {
                 klass = (Class<?>) ((ParameterizedType) type).getRawType();
             } else if (type instanceof WildcardType) {
-                Type[] upperBounds = ((WildcardType) type).getUpperBounds(); // lower bounds not supported
-                if (upperBounds.length > 0) {
-                    if (upperBounds[0] instanceof TypeVariable) { // <? extends T>
-                        if (arg.getAnnotation(GraphQLGenericType.class) == null) {
-                            throw new IllegalArgumentException("GraphQLGenericType Annotation missing at upper bound type variable for class " + aClass);
-                        }
-                        klass = arg.getAnnotation(GraphQLGenericType.class).value();
-                    } else { // <? extends Object>
-                        klass = (Class<?>) upperBounds[0];
-                    }
-                } else {
-                    throw new IllegalArgumentException("No bounds found for type " + type);
-                }
+                klass = getClassFromWildcardType((WildcardType) type, arg);
             } else if (type instanceof TypeVariable) { // <T>
-                if (arg.getAnnotation(GraphQLGenericType.class) == null) {
-                    throw new IllegalArgumentException("GraphQLGenericType Annotation missing at type variable for class " + aClass);
-                }
-                klass = arg.getAnnotation(GraphQLGenericType.class).value();
+                klass = getClassFromTypeVariable((TypeVariable)type, arg);
             } else {
                 klass = (Class<?>) type;
             }
             return new GraphQLList(DefaultTypeFunction.this.apply(klass, arg));
+        }
+
+        private Class<?> getClassFromWildcardType(WildcardType type, AnnotatedType arg) {
+            Type[] upperBounds = ((WildcardType) type).getUpperBounds(); // lower bounds not supported
+            if (upperBounds.length > 0) {
+                if (upperBounds[0] instanceof TypeVariable) { // <? extends T>
+                    if (arg.getAnnotation(GraphQLGenericType.class) == null) {
+                        if (GraphQLAnnotations.getInstance().getConfiguration().getDefaultGenericType() != null) {
+                            return GraphQLAnnotations.getInstance().getConfiguration().getDefaultGenericType();
+                        } else {
+                            throw new IllegalArgumentException("GraphQLGenericType Annotation missing at upper bound type variable");
+                        }
+                    }
+                    return arg.getAnnotation(GraphQLGenericType.class).value();
+                } else { // <? extends Object>
+                    return(Class<?>) upperBounds[0];
+                }
+            } else {
+                if (GraphQLAnnotations.getInstance().getConfiguration().getDefaultGenericType() != null) {
+                    return GraphQLAnnotations.getInstance().getConfiguration().getDefaultGenericType();
+                } else {
+                    throw new IllegalArgumentException("No bounds found for type " + type);
+                }
+            }
+        }
+
+        private Class<?> getClassFromTypeVariable(TypeVariable type, AnnotatedType arg) {
+            if (arg.getAnnotation(GraphQLGenericType.class) == null) {
+                if (GraphQLAnnotations.getInstance().getConfiguration().getDefaultGenericType() != null) {
+                    return GraphQLAnnotations.getInstance().getConfiguration().getDefaultGenericType();
+                } else {
+                    throw new IllegalArgumentException("GraphQLGenericType Annotation missing at type variable");
+                }
+            }
+            return arg.getAnnotation(GraphQLGenericType.class).value();
         }
 
         @Override public Collection<Class<?>> getAcceptedTypes() {
